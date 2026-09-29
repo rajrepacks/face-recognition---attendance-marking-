@@ -239,6 +239,22 @@ class FaceEngine:
         best_score = float(scores[best_index])
         match_ms = (time.perf_counter() - t0) * 1000.0
 
+        # --- NEW: reject if best score is below threshold ---
+        if best_score < self.threshold:
+            logger.info("match=%.2fms best=%.4f → no match (below threshold)", match_ms, best_score)
+            return MatchResult(None, best_score, match_ms)
+
+    # --- NEW: ambiguity check — if 2nd best is also close, reject ---
+        sorted_scores = np.sort(scores)[::-1]
+        if len(sorted_scores) > 1:
+            second_score = float(sorted_scores[1])
+        if second_score >= self.threshold:
+            logger.warning(
+                "Ambiguous match: best=%.4f second=%.4f — rejecting to avoid collision",
+                best_score, second_score
+            )
+            return MatchResult(None, best_score, match_ms)
+
         student_id = student_ids[best_index] if best_score >= self.threshold else None
         logger.info(
             "match=%.2fms best=%.4f threshold=%.2f student_id=%s",

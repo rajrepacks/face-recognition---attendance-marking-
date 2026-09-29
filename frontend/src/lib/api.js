@@ -47,6 +47,7 @@ async function request(path, { method = "GET", body } = {}) {
 export const api = {
   listStudents: () => request("/students"),
   createStudent: (student) => request("/students", { method: "POST", body: student }),
+  deleteStudent: (id) => request(`/students/${id}`, { method: "DELETE" }), 
   enroll: (studentId, images) =>
     request("/faces/enroll", { method: "POST", body: { student_id: studentId, images } }),
   startSession: (className) =>
@@ -57,3 +58,8 @@ export const api = {
 };
 
 export { BASE as API_BASE };
+
+deleteStudent: (id) =>
+  fetch(`${BASE}/students/${id}`, { method: "DELETE" }).then((r) => {
+    if (!r.ok && r.status !== 204) throw new Error("Failed to delete student.");
+  })

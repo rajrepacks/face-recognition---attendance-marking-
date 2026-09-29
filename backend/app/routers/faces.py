@@ -67,6 +67,41 @@ async def enroll_faces(
             )
             continue
 
+        # ----------------------------------------------------------------
+        # DUPLICATE FACE CHECK
+        # Before accepting this sample, check if the face already matches
+        # an EXISTING student in the cache (other than the current student).
+        # ----------------------------------------------------------------
+        match_result = await run_in_threadpool(engine.match, embedding.vector)
+        if (
+            match_result.student_id is not None
+            and match_result.student_id != payload.student_id
+        ):
+            # Find the name of the already-enrolled student for a clear message
+            existing_student = await session.get(Student, match_result.student_id)
+            existing_name = existing_student.name if existing_student else str(match_result.student_id)
+            error_msg = (
+                "This face is already registered to another student: {} (ID {}). "
+                "Each student must have a unique face.".format(
+                    existing_name, match_result.student_id
+                )
+            )
+            logger.warning(
+                "enroll duplicate_face: student_id=%s conflicts with existing student_id=%s score=%.4f",
+                payload.student_id,
+                match_result.student_id,
+                match_result.confidence,
+            )
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail={
+                    "code": "face_already_registered",
+                    "message": error_msg,
+                    "conflicting_student_id": match_result.student_id,
+                },
+            )
+        # ----------------------------------------------------------------
+
         accepted_vectors.append(embedding.vector.tobytes())
         results.append(
             EnrollSampleResult(

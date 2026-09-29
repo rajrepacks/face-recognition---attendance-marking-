@@ -1,6 +1,6 @@
 """Student registration and listing."""
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException,Request, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -53,4 +53,26 @@ async def list_students(
             encoding_count=encoding_count,
         )
         for student, encoding_count in rows
+
     ]
+@router.delete("/{student_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_student(
+    student_id: int,
+    request: Request,
+    session: AsyncSession = Depends(get_session),
+) -> None:
+    from fastapi import Request
+    from app.routers.faces import refresh_encoding_cache
+
+    student = await session.get(Student, student_id)
+    if student is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Student {} does not exist.".format(student_id),
+        )
+    await session.delete(student)
+    await session.commit()
+
+    # Refresh the in-memory face cache so deleted student is no longer matched
+    engine = request.app.state.face_engine
+    await refresh_encoding_cache(engine, session)
