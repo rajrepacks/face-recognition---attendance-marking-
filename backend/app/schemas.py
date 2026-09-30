@@ -90,3 +90,59 @@ class LiveResponse(BaseModel):
     absent: list[StudentOut]
     present_count: int
     absent_count: int
+# --- attendance history and analytics ------------------------------------------
+class AttendanceHistoryEntry(BaseModel):
+    session_id: int
+    date: date
+    class_name: str
+    student: StudentOut
+    status: str
+    marked_at: datetime | None = None
+    confidence: float | None = None
+
+
+class AttendanceHistoryResponse(BaseModel):
+    total_records: int
+    present_count: int
+    absent_count: int
+    records: list[AttendanceHistoryEntry]
+
+
+class AnalyticsSummary(BaseModel):
+    total_sessions: int
+    total_students: int
+    total_possible_attendance: int
+    total_present: int
+    attendance_percentage: float
+
+
+class ClassAnalyticsEntry(BaseModel):
+    class_name: str
+    total_students: int
+    total_sessions: int
+    total_present: int
+    total_possible_attendance: int
+    attendance_percentage: float
+
+
+class StudentAnalyticsEntry(BaseModel):
+    student: StudentOut
+    total_sessions: int
+    present_count: int
+    absent_count: int
+    attendance_percentage: float
+
+
+class DailyAnalyticsEntry(BaseModel):
+    date: date
+    total_sessions: int
+    total_present: int
+    total_possible_attendance: int
+    attendance_percentage: float
+
+
+class AttendanceAnalyticsResponse(BaseModel):
+    summary: AnalyticsSummary
+    class_summary: list[ClassAnalyticsEntry]
+    student_summary: list[StudentAnalyticsEntry]
+    daily_summary: list[DailyAnalyticsEntry]
